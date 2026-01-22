@@ -4,9 +4,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "hashmap.h"
 
 
-char *wordcount_map(const char *text);
+
+
+void wordcount_map(const char *text, hashmap_t *hashmap);
 
 char *wordcount_reduce(const char *text);
 

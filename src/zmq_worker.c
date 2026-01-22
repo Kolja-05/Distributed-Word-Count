@@ -6,7 +6,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "hashmap.h"
 #include "protocol.h"
+#include "wordcount.h"
 
 int main (int argc, const char * argv[])
 {
@@ -56,9 +58,15 @@ int main (int argc, const char * argv[])
         protocol_type_t type = protocol_get_type(buf);
 
         switch (type) {
-            case PROTOCOL_MAP:
-                zmq_send(socket, "", 1,0);
+            case PROTOCOL_MAP: {
+                hashmap_t *hashmap = hashmap_create();
+                wordcount_map(buf + PROTOCOL_TYPE_LEN, hashmap);
+                char outbuf[PROTOCOL_MAX_MSG_LEN];
+                hashmap_to_string(hashmap, outbuf);
+                zmq_send(socket, outbuf, strlen(outbuf),0);
+                hashmap_free(hashmap);
                 break;
+            }
             case PROTOCOL_RED:
                 zmq_send(socket, "", 1,0);
                 break;
