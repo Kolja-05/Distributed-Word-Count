@@ -31,6 +31,5 @@ const char *protocol_type_to_string(protocol_type_t type);
 
 protocol_type_t protocol_string_to_type(const char *type_str);
 
-size_t protocol_message_length(const char *message);
 
 #endif
