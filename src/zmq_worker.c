@@ -10,10 +10,12 @@
 #include "protocol.h"
 #include "wordcount.h"
 
+#define WORKER_ADDR_LEN 32
+
 int main (int argc, const char * argv[])
 {
     if (argc < 2) {
-        printf("Usage: %s <port1> [port2 ...]", argv[0]);
+        printf("Usage: %s <worker port 1> <worker port 2> ... <worker port n>", argv[0]);
         return 1;
     }
     //  Socket to talk to clients
@@ -23,7 +25,7 @@ int main (int argc, const char * argv[])
     void *socket = zmq_socket (context, ZMQ_REP);
     bool bound = false;
     for (int i=0; i<num_ports; i++) {
-        char addr[64];
+        char addr[WORKER_ADDR_LEN];
         snprintf(addr,sizeof(addr), "tcp://127.0.0.1:%s",argv[i+1]);
         if(zmq_bind (socket, addr) == 0) {
             bound = true;
