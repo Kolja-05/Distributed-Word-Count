@@ -1,5 +1,4 @@
 #include "chunking.h"
-#include "protocol.h"
 #include "string.h"
 #include "stdlib.h"
 #include <stdio.h>
