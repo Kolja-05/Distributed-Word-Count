@@ -26,22 +26,21 @@ int main (int argc, char *argv[]) {
     }
     // ----------- MAP ------------
     for (int i=0; i<num_workers; i++) {
-        char buffer [10];
+        char buffer [PROTOCOL_MAX_MSG_LEN];
         char msg[PROTOCOL_MAX_MSG_LEN];
         if (!protocol_build_message(PROTOCOL_MAP, "", msg, sizeof(msg))) {
             fprintf(stderr, "error while building message\n");
             error = 1;
             break;
         }
-        zmq_send (worker_socks[i], msg, strlen(msg), 0);
-        int bytes_received = zmq_recv (worker_socks[i], buffer, 10, 0);
+        zmq_send (worker_socks[i], msg, strlen(msg) + 1, 0);
+        int bytes_received = zmq_recv (worker_socks[i], buffer, PROTOCOL_MAX_MSG_LEN, 0);
         if (bytes_received < 0) {
             fprintf(stderr, "recv failed from worker %d\n", i);
             error = 1;
             break;
         }
-        buffer[bytes_received] = '\0';
-        if (!protocol_validate_message(buffer)) {
+        if (buffer[bytes_received - 1] != '\0' || !protocol_validate_message(buffer)) {
             fprintf(stderr, "invalid reply from worker %d\n", i);
             error = 1;
             break;
@@ -49,21 +48,20 @@ int main (int argc, char *argv[]) {
     }
     // -------- RIP --------
     for (int i=0; i<num_workers; i++) {
-        char buffer[10];
+        char buffer[PROTOCOL_MAX_MSG_LEN];
         char msg[PROTOCOL_MAX_MSG_LEN];
         if (!protocol_build_message(PROTOCOL_RIP, "", msg, sizeof(msg))) {
             fprintf(stderr, "error while building message\n");
             break;
         }
-        zmq_send(worker_socks[i], msg, strlen(msg),0);
-        int bytes_received = zmq_recv(worker_socks[i], buffer, 10, 0);
+        zmq_send(worker_socks[i], msg, strlen(msg) + 1,0);
+        int bytes_received = zmq_recv(worker_socks[i], buffer, PROTOCOL_MAX_MSG_LEN, 0);
         if (bytes_received < 0) {
             fprintf(stderr, "recv failed from worker %d\n", i);
             error = 1;
             break;
         }
-        buffer[bytes_received] = '\0';
-        if (!protocol_validate_message(buffer)) {
+        if (buffer[bytes_received - 1] != '\0' || !protocol_validate_message(buffer)) {
             fprintf(stderr, "invalid reply from worker %d\n", i);
             error = 1;
             break;

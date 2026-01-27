@@ -34,7 +34,7 @@ int main (int argc, const char * argv[])
     }
 
     if (!bound) {
-        perror("Worker could not bind to socket\n");
+        fprintf(stderr, "Worker could not bind to socket\n");
         zmq_close(socket);
         zmq_ctx_destroy(context);
         return 1;
@@ -42,7 +42,7 @@ int main (int argc, const char * argv[])
 
     bool running = true;
     char buf[PROTOCOL_MAX_MSG_LEN];
-
+    int error = 0;
     while (running) {
         int bytes_recieved = zmq_recv(
             socket,
@@ -52,8 +52,7 @@ int main (int argc, const char * argv[])
         if (bytes_recieved < 0) {
             continue;
         }
-        buf[bytes_recieved] = '\0';
-        if (!protocol_validate_message(buf)) {
+        if (buf[bytes_recieved -1] != '\0' || !protocol_validate_message(buf)) {
             zmq_send(socket, "", 1, 0);
             continue;
         }
@@ -61,11 +60,20 @@ int main (int argc, const char * argv[])
 
         switch (type) {
             case PROTOCOL_MAP: {
+                // TODO break up reply message if payload is to big
+                const char *payload = protocol_get_payload(buf);
                 hashmap_t *hashmap = hashmap_create();
-                wordcount_map(buf + PROTOCOL_TYPE_LEN, hashmap);
-                char outbuf[PROTOCOL_MAX_MSG_LEN];
-                hashmap_to_string(hashmap, outbuf);
-                zmq_send(socket, outbuf, strlen(outbuf),0);
+                wordcount_map(payload, hashmap);
+                char reply_payload[PROTOCOL_MAX_MSG_LEN - PROTOCOL_TYPE_LEN];
+                hashmap_to_string(hashmap, reply_payload);
+                char reply_msg[PROTOCOL_MAX_MSG_LEN];
+                if (!protocol_build_message(PROTOCOL_MAP, reply_payload, reply_msg, PROTOCOL_MAX_MSG_LEN)) {
+                    fprintf(stderr, "error while building message\n");
+                    running = false;
+                    error = 1;
+                    break;
+                }
+                zmq_send(socket, reply_msg, strlen(reply_msg) + 1,0);
                 hashmap_free(hashmap);
                 break;
             }
@@ -73,7 +81,7 @@ int main (int argc, const char * argv[])
                 zmq_send(socket, "", 1,0);
                 break;
             case PROTOCOL_RIP:
-                zmq_send(socket, "rip", PROTOCOL_TYPE_LEN, 0);
+                zmq_send(socket, "rip", PROTOCOL_TYPE_LEN + 1, 0);
                 running = false;
                 break;
 
@@ -85,6 +93,8 @@ int main (int argc, const char * argv[])
     //cleanup
     zmq_close(socket);
     zmq_ctx_destroy(context);
-
-    return 0;
+    if (!error) {
+        return 0;
+    }
+    return 1;
 }
