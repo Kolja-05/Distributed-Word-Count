@@ -60,20 +60,13 @@ int main (int argc, const char * argv[])
 
         switch (type) {
             case PROTOCOL_MAP: {
-                // TODO break up reply message if payload is to big
-                const char *payload = protocol_get_payload(buf);
+                // TODO break up reply message if string encoded hashmap is to big
                 hashmap_t *hashmap = hashmap_create();
+                const char * payload = protocol_get_payload(buf);
                 wordcount_map(payload, hashmap);
-                char reply_payload[PROTOCOL_MAX_MSG_LEN - PROTOCOL_TYPE_LEN];
-                hashmap_to_string(hashmap, reply_payload);
-                char reply_msg[PROTOCOL_MAX_MSG_LEN];
-                if (!protocol_build_message(PROTOCOL_MAP, reply_payload, reply_msg, PROTOCOL_MAX_MSG_LEN)) {
-                    fprintf(stderr, "error while building message\n");
-                    running = false;
-                    error = 1;
-                    break;
-                }
-                zmq_send(socket, reply_msg, strlen(reply_msg) + 1,0);
+                char reply_buf[PROTOCOL_MAX_MSG_LEN];
+                hashmap_to_string(hashmap, reply_buf);
+                zmq_send(socket,reply_buf, 1,0);
                 hashmap_free(hashmap);
                 break;
             }
