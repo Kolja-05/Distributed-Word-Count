@@ -35,6 +35,7 @@ int main (int argc, char *argv[]) {
         zmq_connect (worker_socks[i], worker_addr);
     }
     // ----------- MAP ------------
+    // ----- create threads -------
     distribution_thread_args_t thread_args[num_workers];
     pthread_t threads[num_workers];
     size_t chunks_per_worker = chunks.count / num_workers;
@@ -55,16 +56,24 @@ int main (int argc, char *argv[]) {
 
         pthread_create(&threads[i],NULL, distribution_thread, &thread_args[i]);
     }
-
+    // ------ join threaeds ----
     for (int i=0; i<num_workers; i++) {
         pthread_join(threads[i],NULL);
     }
+    // ----- check for errors from threads -----
     for (int i=0; i<num_workers; i++) {
          if (thread_args[i].error != 0) {
             fprintf(stderr, "Thread %d failed with error code %d\n", i, thread_args[i].error);
             error = 1;
         }
     }
+    // ---    // ----- free results -----
+    for (int i=0; i<chunks.count; i++) {
+        free(results[i]);
+    }
+    free(results);
+    //-- free chunks -----
+    chunking_free(&chunks);
     // -------- RIP --------
     for (int i=0; i<num_workers; i++) {
         char buffer[PROTOCOL_MAX_MSG_LEN];
@@ -100,5 +109,5 @@ int main (int argc, char *argv[]) {
     if (!error) {
         return 0;
     }
-    return 1;
+    return error;
 }

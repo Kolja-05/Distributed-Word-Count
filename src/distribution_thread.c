@@ -27,6 +27,7 @@ void *distribution_thread(void * arg) {
             args->error = 1;
             return NULL;
         }
+        fprintf(stderr,"msg: %s\n", msg);
         zmq_send(sock, msg, strlen(msg) + 1, 0);
 
         char buffer[PROTOCOL_MAX_MSG_LEN];
@@ -45,7 +46,7 @@ void *distribution_thread(void * arg) {
             for (int j=start_idx; j<i; j++) {
                 free(results[j]);
                 results[j] = NULL;
-            }
+        }
             args->error = 3;
             return NULL;
         }

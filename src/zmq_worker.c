@@ -66,7 +66,11 @@ int main (int argc, const char * argv[])
                 wordcount_map(payload, hashmap);
                 char reply_buf[PROTOCOL_MAX_MSG_LEN];
                 hashmap_to_string(hashmap, reply_buf);
-                zmq_send(socket,reply_buf, 1,0);
+                if (strlen(reply_buf)>= PROTOCOL_MAX_MSG_LEN) {
+                    // break up message into smaller pieces that fit the maximum message length for the protocol
+                    
+                }
+                zmq_send(socket,reply_buf, strlen(reply_buf) + 1,0);
                 hashmap_free(hashmap);
                 break;
             }

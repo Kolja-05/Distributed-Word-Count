@@ -5,7 +5,7 @@
 #include "protocol.h"
 
 
-#define MAX_CHUNK_SIZE PROTOCOL_MAX_MSG_LEN - PROTOCOL_TYPE_LEN
+#define MAX_CHUNK_SIZE PROTOCOL_MAX_MSG_LEN - PROTOCOL_TYPE_LEN - 1 // 1 for '\0'
 
 typedef struct chunk {
     char * data;
