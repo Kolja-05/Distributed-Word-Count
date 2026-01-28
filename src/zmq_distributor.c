@@ -25,6 +25,7 @@ int main (int argc, char *argv[]) {
     // ------- CHUNKING -------------
     const char *filepath = argv[1];
     chunk_list_t chunks = chunking_from_file(filepath);
+    printf("chunk count=%lu", chunks.count);
     char **results = calloc(chunks.count, sizeof(char *));
 
     // --------- CREATE WORKER SOCKETS ---------
@@ -35,15 +36,17 @@ int main (int argc, char *argv[]) {
         zmq_connect (worker_socks[i], worker_addr);
     }
     // ----------- MAP ------------
+    printf("map\n");
     // ----- create threads -------
     distribution_thread_args_t thread_args[num_workers];
     pthread_t threads[num_workers];
     size_t chunks_per_worker = chunks.count / num_workers;
-    size_t remainding_chunks = chunks.count % num_workers;
+    size_t remaining_chunks = chunks.count % num_workers;
+    printf("chunks_per_worker=%lu\n", chunks_per_worker);
     size_t start = 0;
     for (int i=0; i<num_workers && error == 0; i++) {
         int end = start + chunks_per_worker;
-        if (i < remainding_chunks) {
+        if (i < remaining_chunks) {
             end ++;
         }
         thread_args[i].sock = worker_socks[i];
@@ -53,7 +56,7 @@ int main (int argc, char *argv[]) {
         thread_args[i].results = results;
 
         start = end;
-
+        printf("starting distribution thread %d\n", i);
         pthread_create(&threads[i],NULL, distribution_thread, &thread_args[i]);
     }
     // ------ join threaeds ----
@@ -67,6 +70,7 @@ int main (int argc, char *argv[]) {
             error = 1;
         }
     }
+    // ------------ REDUCE -------------
     // ---    // ----- free results -----
     for (int i=0; i<chunks.count; i++) {
         free(results[i]);
@@ -89,7 +93,7 @@ int main (int argc, char *argv[]) {
             error = 1;
             break;
         }
-        if (buffer[bytes_received - 1] != '\0' || !protocol_validate_message(buffer)) {
+        if (!protocol_validate_message(buffer, bytes_received)) {
             fprintf(stderr, "invalid reply from worker %d\n", i);
             error = 1;
             break;

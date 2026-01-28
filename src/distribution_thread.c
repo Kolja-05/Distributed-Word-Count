@@ -15,9 +15,11 @@ void *distribution_thread(void * arg) {
     char **results = args->results;
 
     args->error = 0;
-
+    printf("in thread\n");
+    printf("start=%d, end=%d\n", start_idx, end_idx);
     for (int i=start_idx; i<end_idx; i++) {
         char msg[PROTOCOL_MAX_MSG_LEN];
+        printf("for\n");
         if(!protocol_build_message(PROTOCOL_MAP,chunks.chunks[i].data, msg, sizeof(msg))) {
             fprintf(stderr, "error while building message\n");
             for (int j=start_idx; j<i; j++) {
@@ -27,9 +29,9 @@ void *distribution_thread(void * arg) {
             args->error = 1;
             return NULL;
         }
-        fprintf(stderr,"msg: %s\n", msg);
+        printf("sending map message\n");
         zmq_send(sock, msg, strlen(msg) + 1, 0);
-
+        // printf("------------- MAP MESSAGE ------------\n\n%s\n", msg);
         char buffer[PROTOCOL_MAX_MSG_LEN];
         int bytes_received = zmq_recv(sock, buffer, sizeof(buffer), 0);
         if (bytes_received < 0) {
@@ -41,7 +43,7 @@ void *distribution_thread(void * arg) {
             args->error = 2;
             return NULL;
         }
-        if (buffer[bytes_received-1] != '\0' || !protocol_validate_message(buffer)) {
+        if (!protocol_validate_message(buffer, bytes_received)) {
             fprintf(stderr, "invalid reply from worker %d\n", i);
             for (int j=start_idx; j<i; j++) {
                 free(results[j]);

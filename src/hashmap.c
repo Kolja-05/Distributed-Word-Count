@@ -6,10 +6,11 @@
 
 static unsigned hash(const char *str) {
     unsigned hash = 5381;
-    for (int i=0; i<HASHMAP_SIZE; i++) {
-        hash = ((hash << 5)) + hash +  str[i];
+    while(*str) {
+        hash = (hash << 5) + hash + (unsigned char) (*str);
+        str++;
     }
-    return hash;
+    return hash % HASHMAP_SIZE;
 }
 
 
@@ -46,7 +47,8 @@ void hashmap_free(hashmap_t *map) {
         while (e) {
             entry_t *next = e->next;
             free(e->word);
-            free(e->word);
+            free(e->value);
+            free(e);
             e = next;
         }
     }

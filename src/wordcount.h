@@ -11,7 +11,7 @@
 
 void wordcount_map(const char *text, hashmap_t *hashmap);
 
-char *wordcount_reduce(const char *text);
+void wordcount_ones_string_to_number(char *input, char *output);
 
 #endif
 

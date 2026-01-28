@@ -25,7 +25,7 @@ bool protocol_build_message(
     size_t out_buf_size
 );
 
-bool protocol_validate_message(const char *message);
+bool protocol_validate_message(const char *message, size_t len);
 
 const char *protocol_type_to_string(protocol_type_t type);
 

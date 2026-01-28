@@ -1,4 +1,5 @@
 #include "protocol.h"
+#include <stdbool.h>
 #include <string.h>
 
 protocol_type_t protocol_get_type(const char *message) {
@@ -43,15 +44,22 @@ bool protocol_build_message(protocol_type_t type, const char *payload, char *out
 
 
 
-bool protocol_validate_message(const char *message) {
-    if (!(strlen(message)>= PROTOCOL_TYPE_LEN)) {
+bool protocol_validate_message(const char *message, size_t len) {
+    if (len <= 0) {
         return false;
     }
-    if (protocol_get_type(message) == PROTOCOL_INVALID) {
+    bool nullterminated = false;
+    for (size_t i=0; i<len; i++) {
+        if (message[i] == '\0') {
+            nullterminated = true;
+            break;
+        }
+    }
+    if (!nullterminated) {
         return false;
     }
-    // max 1500 bytes long
-    if (!(strlen(message) <= PROTOCOL_MAX_MSG_LEN)) {
+    // max 1500 bytes long (\0 inclusive)
+    if (!(strlen(message) < PROTOCOL_MAX_MSG_LEN)) {
         return false;
     }
     return true;

@@ -25,7 +25,7 @@ int main (int argc, const char * argv[])
     void *socket = zmq_socket (context, ZMQ_REP);
     bool bound = false;
     for (int i=0; i<num_ports; i++) {
-        char addr[WORKER_ADDR_LEN];
+        char addr[WORKER_ADDR_LEN] = {0}; // initialieze to avoid unknown behaviour
         snprintf(addr,sizeof(addr), "tcp://127.0.0.1:%s",argv[i+1]);
         if(zmq_bind (socket, addr) == 0) {
             bound = true;
@@ -41,7 +41,7 @@ int main (int argc, const char * argv[])
     }
 
     bool running = true;
-    char buf[PROTOCOL_MAX_MSG_LEN];
+    char buf[PROTOCOL_MAX_MSG_LEN] = {0};
     int error = 0;
     while (running) {
         int bytes_recieved = zmq_recv(
@@ -52,25 +52,20 @@ int main (int argc, const char * argv[])
         if (bytes_recieved < 0) {
             continue;
         }
-        if (buf[bytes_recieved -1] != '\0' || !protocol_validate_message(buf)) {
+        if (!protocol_validate_message(buf, bytes_recieved)) {
             zmq_send(socket, "", 1, 0);
-            continue;
         }
         protocol_type_t type = protocol_get_type(buf);
 
         switch (type) {
             case PROTOCOL_MAP: {
-                // TODO break up reply message if string encoded hashmap is to big
                 hashmap_t *hashmap = hashmap_create();
                 const char * payload = protocol_get_payload(buf);
                 wordcount_map(payload, hashmap);
                 char reply_buf[PROTOCOL_MAX_MSG_LEN];
                 hashmap_to_string(hashmap, reply_buf);
-                if (strlen(reply_buf)>= PROTOCOL_MAX_MSG_LEN) {
-                    // break up message into smaller pieces that fit the maximum message length for the protocol
-                    
-                }
                 zmq_send(socket,reply_buf, strlen(reply_buf) + 1,0);
+                // printf("------------- MAPPED TEXT ------------\n\n%s\n", reply_buf);
                 hashmap_free(hashmap);
                 break;
             }

@@ -7,8 +7,7 @@
 
 //--------HASHMAP-------------
 
-#define HASHMAP_SIZE 1024
-
+#define HASHMAP_SIZE 512*512
 
 
 typedef struct hash_entry {
