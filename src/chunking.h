@@ -21,6 +21,9 @@ typedef struct chunk_list {
 
 chunk_list_t chunking_from_file(const char * filepath);
 
+
+chunk_list_t chunking_results(char **input, size_t input_count);
+
 void chunking_free(chunk_list_t *chunks);
 
 #endif

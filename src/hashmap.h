@@ -12,7 +12,8 @@
 
 typedef struct hash_entry {
     char *word;
-    char *value;
+    char *str_value;
+    int int_value;
     struct hash_entry *next;
 } entry_t;
 
@@ -22,10 +23,14 @@ typedef struct hash_map{
 
 hashmap_t *hashmap_create(void);
 
-void hashmap_put(hashmap_t *map, const char *word);
+void hashmap_append_one(hashmap_t *map, const char *word);
+
+void hashmap_add_int_value(hashmap_t *map, const char *word, int value);
 
 void hashmap_free(hashmap_t *map);
 
-void hashmap_to_string(hashmap_t *map, char *outbuf);
+void hashmap_str_values_to_string(hashmap_t *map, char *outbuf);
+
+void hashmap_int_values_to_string(hashmap_t *map, char *outbuf);
 
 #endif

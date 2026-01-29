@@ -63,15 +63,24 @@ int main (int argc, const char * argv[])
                 const char * payload = protocol_get_payload(buf);
                 wordcount_map(payload, hashmap);
                 char reply_buf[PROTOCOL_MAX_MSG_LEN];
-                hashmap_to_string(hashmap, reply_buf);
+                hashmap_str_values_to_string(hashmap, reply_buf);
                 zmq_send(socket,reply_buf, strlen(reply_buf) + 1,0);
                 // printf("------------- MAPPED TEXT ------------\n\n%s\n", reply_buf);
                 hashmap_free(hashmap);
                 break;
             }
-            case PROTOCOL_RED:
-                zmq_send(socket, "", 1,0);
+            case PROTOCOL_RED: {
+                // hashmap_t *hashmap = hashmap_create();
+                // const char *payload = protocol_get_payload(buf);
+                // char reply_buf[PROTOCOL_MAX_MSG_LEN];
+                // wordcount_ones_string_to_number(payload, reply_buf);
+                // wordcount_reduce(reply_buf, hashmap);
+                // hashmap_int_values_to_string(hashmap, reply_buf);
+                // zmq_send(socket, reply_buf, strlen(reply_buf) + 1,0);
+                // hashmap_free(hashmap);
+                zmq_send(socket, "", 1, 0);
                 break;
+            }
             case PROTOCOL_RIP:
                 zmq_send(socket, "rip", PROTOCOL_TYPE_LEN + 1, 0);
                 running = false;

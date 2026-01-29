@@ -12,6 +12,7 @@ void *distribution_thread(void * arg) {
     chunk_list_t chunks = args->chunks;
     int start_idx = args->start_idx;
     int end_idx = args->end_idx;
+    protocol_type_t type = args->type;
     char **results = args->results;
 
     args->error = 0;
@@ -20,7 +21,7 @@ void *distribution_thread(void * arg) {
     for (int i=start_idx; i<end_idx; i++) {
         char msg[PROTOCOL_MAX_MSG_LEN];
         printf("for\n");
-        if(!protocol_build_message(PROTOCOL_MAP,chunks.chunks[i].data, msg, sizeof(msg))) {
+        if(!protocol_build_message(type,chunks.chunks[i].data, msg, sizeof(msg))) {
             fprintf(stderr, "error while building message\n");
             for (int j=start_idx; j<i; j++) {
                 free(results[j]);
@@ -29,7 +30,7 @@ void *distribution_thread(void * arg) {
             args->error = 1;
             return NULL;
         }
-        printf("sending map message\n");
+        printf("sending message %s\n", protocol_type_to_string(type));
         zmq_send(sock, msg, strlen(msg) + 1, 0);
         // printf("------------- MAP MESSAGE ------------\n\n%s\n", msg);
         char buffer[PROTOCOL_MAX_MSG_LEN];

@@ -3,10 +3,10 @@
 #include "protocol.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
-#define MAX_WORD_LEN 32
 
 void wordcount_map(const char *text, hashmap_t *hashmap) {
     char word[MAX_WORD_LEN] = {0}; // initialize to avoid unknown behaviour
@@ -21,18 +21,18 @@ void wordcount_map(const char *text, hashmap_t *hashmap) {
         else {
             if (pos > 0) {
                 word[pos] = '\0';
-                hashmap_put(hashmap, word);
+                hashmap_append_one(hashmap, word);
                 pos = 0;
             }
         }
     }
     if (pos > 0) {
         word[pos] = '\0';
-        hashmap_put(hashmap, word);
+        hashmap_append_one(hashmap, word);
     }
 }
 
-void wordcount_ones_String_to_number(char *input, char *output) {
+void wordcount_ones_string_to_number(const char *input, char *output) {
     int input_idx = 0;
     int output_idx = 0;
     while (input[input_idx]) {
@@ -51,4 +51,24 @@ void wordcount_ones_String_to_number(char *input, char *output) {
     output[output_idx] = '\0';
 }
 
+void wordcount_reduce(const char *input, hashmap_t *hashmap) {
+    char word[MAX_WORD_LEN] = {0}; // initialize to avoid unknown behaviour
+    int pos = 0;
+    for (int i=0; input[i]!= '\0'; i++) {
+        if (isalpha(input[i])) {
+            if (pos < MAX_WORD_LEN - 1) {
+                word[pos] = tolower(input[i]);
+                pos++;
+            }
+        }
+        else {
+            if (pos > 0) {
+                word[pos] = '\0';
+                int count = atoi(&input[i]);
+                hashmap_add_int_value(hashmap, word, count);
+                pos = 0;
+            }
+        }
+    }
+}
 

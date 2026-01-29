@@ -7,6 +7,7 @@
 #include <zmq.h>
 
 #include "chunking.h"
+#include "protocol.h"
 
 typedef struct distribution_thread_args {
     void * sock;
@@ -15,6 +16,7 @@ typedef struct distribution_thread_args {
     int end_idx;
     char **results;
     int error;
+    protocol_type_t type;
 } distribution_thread_args_t;
 
 void *distribution_thread(void * arg);
