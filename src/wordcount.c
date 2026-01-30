@@ -71,4 +71,51 @@ void wordcount_reduce(const char *input, hashmap_t *hashmap) {
         }
     }
 }
+int wordcount_hashmap_to_array(hashmap_t *map, wordcount_pair_t **out) {
+    // count entries
+    int out_len = 0;
+    for (int i=0; i<HASHMAP_SIZE; i++) {
+        entry_t *e = map->entries[i];
+        while(e) {
+            out_len++;
+            e = e->next;
+        }
+    }
+    *out = calloc(out_len, sizeof(wordcount_pair_t));
+    if (!*out) {
+        fprintf(stderr, "calloc failed\n");
+        return -1;
+    }
+    int idx = 0;
+    for (int i=0; i<HASHMAP_SIZE; i++) {
+        entry_t *e = map->entries[i];
+        while(e) {
+            (*out + idx)->word = e->word;
+            (*out + idx)->count = e->int_value;
+            e = e->next;
+            idx++;
+        }
+    }
+    return out_len;
+}
 
+int wordcount_compare(const void *a, const void *b) {
+    wordcount_pair_t *word_a = (wordcount_pair_t*) a;
+    wordcount_pair_t *word_b = (wordcount_pair_t*) b;
+
+    if (word_a->count != word_b->count) {
+        // counts are not eaqual -> order is decided by the count
+        return word_b->count - word_a->count;
+    }
+    else {
+        // equal count -> lexicographic order should decide
+        return strcmp(word_a->word, word_b->word); // if words are equal, we messed up combine
+    }
+}
+
+void wordcount_print(wordcount_pair_t *result, size_t len) {
+    printf("word,frequency\n");
+    for (int i=0; i<len; i++) {
+        printf("%s,%d\n", result[i].word, result[i].count);
+    }
+}

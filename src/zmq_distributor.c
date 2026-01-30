@@ -1,7 +1,9 @@
+#include "hashmap.h"
 #include "protocol.h"
 #include "chunking.h"
 #include "distribution_thread.h"
 #include "chunking.h"
+#include "wordcount.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <zmq.h>
@@ -35,7 +37,6 @@ int main (int argc, char *argv[]) {
         zmq_connect (worker_socks[i], worker_addr);
     }
     // ----------- MAP ------------
-    printf("map\n");
     // ----- create threads -------
     distribution_thread_args_t thread_args[num_workers];
     pthread_t threads[num_workers];
@@ -74,7 +75,6 @@ int main (int argc, char *argv[]) {
     // ------------ REDUCE -------------
     chunk_list_t packed_results = chunking_results(results, num_results);
     // ----- free results -----
-    printf("free results\n");
     for (int i=0; i<num_results; i++) {
         free(results[i]);
     }
@@ -115,13 +115,29 @@ int main (int argc, char *argv[]) {
         }
     }
 
+    // ---------- COMBINE -----------
+    //
+    hashmap_t *hashmap = hashmap_create();
+    for (int i=0; i<num_reduced_results; i++) {
+        wordcount_reduce(reduced_results[i], hashmap);
+    }
     // ------- free reduced results ------
     for (int i=0; i<num_reduced_results; i++) {
         free(reduced_results[i]);
     }
     free(reduced_results);
-
-    // TODO COMBINE AND SORT
+    // ------------ SORT -------------
+    wordcount_pair_t *word_array;
+    int word_array_len = wordcount_hashmap_to_array(hashmap, &word_array);
+    if (word_array_len < 0) {
+        error = 1;
+    }
+    else {
+        qsort(word_array, word_array_len, sizeof(wordcount_pair_t), wordcount_compare);
+        wordcount_print(word_array,word_array_len);
+    }
+    hashmap_free(hashmap);
+    free(word_array);
     // -------- RIP --------
     for (int i=0; i<num_workers; i++) {
         char buffer[PROTOCOL_MAX_MSG_LEN];

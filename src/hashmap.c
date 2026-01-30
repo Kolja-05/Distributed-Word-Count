@@ -66,6 +66,7 @@ void hashmap_add_int_value(hashmap_t *map, const char *word, int value) {
     e = calloc(1, sizeof(entry_t));
     if (!e) {
         fprintf(stderr, "calloc failed\n");
+        return;
     }
     e->word = strdup(word);
     e->int_value = value;
@@ -82,7 +83,9 @@ void hashmap_free(hashmap_t *map) {
         while (e) {
             entry_t *next = e->next;
             free(e->word);
-            free(e->str_value);
+            if (e->str_value) {
+                free(e->str_value);
+            }
             free(e);
             e = next;
         }

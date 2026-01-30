@@ -28,7 +28,6 @@ chunk_list_t chunking_from_file(const char * filepath) {
     if (remaining_bytes > 0) {
         num_chunks ++;
     }
-    printf ("################ num chunks: %zu", num_chunks);
 
 
    result.chunks = malloc(sizeof(chunk_t) * num_chunks);
