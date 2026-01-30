@@ -1,5 +1,6 @@
 #include "hashmap.h"
 #include "protocol.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,13 +20,18 @@ hashmap_t *hashmap_create(void) {
 }
 
 void hashmap_append_one(hashmap_t *map, const char *word) {
-    unsigned idx = hash(word);
+    unsigned idx = hash(word) % HASHMAP_SIZE;
     entry_t *e = map->entries[idx];
 
     while(e) {
         if (strcmp(e->word, word) == 0) {
             size_t len = strlen(e->str_value);
-            e->str_value = realloc(e->str_value, len + 2);
+            char * tmp = realloc(e->str_value, len + 2);
+            if (!tmp) {
+                fprintf(stderr, "realloc failed \n");
+                return;
+            }
+            e->str_value = tmp;
             e->str_value[len] = '1';
             e->str_value[len+1] = '\0';
             return;
@@ -33,7 +39,11 @@ void hashmap_append_one(hashmap_t *map, const char *word) {
         e = e->next;
     }
     //e is not allready in the hashmap
-    e = malloc(sizeof(entry_t));
+    e = calloc(1, sizeof(entry_t));
+    if (!e) {
+        fprintf(stderr, "calloc failed\n");
+        return;
+    }
     e->word = strdup(word);
     e->str_value = strdup("1");
     e->next = map->entries[idx];
@@ -53,7 +63,10 @@ void hashmap_add_int_value(hashmap_t *map, const char *word, int value) {
         e = e->next;
     }
     //e is not allready in the hashmap
-    e = malloc(sizeof(entry_t));
+    e = calloc(1, sizeof(entry_t));
+    if (!e) {
+        fprintf(stderr, "calloc failed\n");
+    }
     e->word = strdup(word);
     e->int_value = value;
     e->next = map->entries[idx];
@@ -61,14 +74,15 @@ void hashmap_add_int_value(hashmap_t *map, const char *word, int value) {
 }
 
 void hashmap_free(hashmap_t *map) {
+    if (!map) {
+        return;
+    }
     for (int i=0; i<HASHMAP_SIZE; i++) {
         entry_t *e = map->entries[i];
         while (e) {
             entry_t *next = e->next;
             free(e->word);
-            if (e->str_value) {
-                free(e->str_value);
-            }
+            free(e->str_value);
             free(e);
             e = next;
         }
@@ -96,7 +110,20 @@ void hashmap_str_values_to_string(hashmap_t *map, char *outbuf) {
     outbuf[pos] = '\0';
 }
 
-
 void hashmap_int_values_to_string(hashmap_t *map, char *outbuf) {
-
+    size_t pos = 0;
+    for (int i=0; i < HASHMAP_SIZE; i++) {
+        entry_t *e = map->entries[i];
+        while(e) {
+            int n = snprintf(outbuf + pos, PROTOCOL_MAX_MSG_LEN - pos, "%s%d", e->word, e->int_value);
+            if (n < 0 || pos + n >= PROTOCOL_MAX_MSG_LEN) {
+                // should not happen since reduced input is allways shorter than the input
+                pos = PROTOCOL_MAX_MSG_LEN -1;
+                outbuf[pos] ='\0';
+            }
+            pos += n;
+            e = e->next;
+        }
+    }
+    outbuf[pos] = '\0';
 }

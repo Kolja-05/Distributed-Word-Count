@@ -16,8 +16,6 @@ void *distribution_thread(void * arg) {
     char **results = args->results;
 
     args->error = 0;
-    printf("in thread\n");
-    printf("start=%d, end=%d\n", start_idx, end_idx);
     for (int i=start_idx; i<end_idx; i++) {
         char msg[PROTOCOL_MAX_MSG_LEN];
         printf("for\n");
@@ -30,7 +28,6 @@ void *distribution_thread(void * arg) {
             args->error = 1;
             return NULL;
         }
-        printf("sending message %s\n", protocol_type_to_string(type));
         zmq_send(sock, msg, strlen(msg) + 1, 0);
         // printf("------------- MAP MESSAGE ------------\n\n%s\n", msg);
         char buffer[PROTOCOL_MAX_MSG_LEN];

@@ -24,7 +24,6 @@ int main (int argc, char *argv[]) {
     // ------- CHUNKING -------------
     const char *filepath = argv[1];
     chunk_list_t chunks = chunking_from_file(filepath);
-    printf("chunk count=%lu", chunks.count);
     size_t num_results = chunks.count;
     char **results = calloc(num_results, sizeof(char *));
 
@@ -53,7 +52,7 @@ int main (int argc, char *argv[]) {
         thread_args[i].start_idx = start;
         thread_args[i].end_idx = end;
         thread_args[i].results = results;
-        thread_args[i].type = PROTOCOL_RED;
+        thread_args[i].type = PROTOCOL_MAP;
 
         start = end;
         pthread_create(&threads[i],NULL, distribution_thread, &thread_args[i]);
@@ -73,7 +72,6 @@ int main (int argc, char *argv[]) {
     }
     
     // ------------ REDUCE -------------
-    printf("################ STARTING REDUCE #############################\n");
     chunk_list_t packed_results = chunking_results(results, num_results);
     // ----- free results -----
     printf("free results\n");
@@ -81,10 +79,9 @@ int main (int argc, char *argv[]) {
         free(results[i]);
     }
     free(results);
-    size_t num_reduced_results = chunks.count;
+    size_t num_reduced_results = packed_results.count;
     char **reduced_results = calloc(num_results, sizeof(char *));
 
-    printf("starting distribution threads for reduce\n");
     // -------- distribute packed result with reduce command to workers -----------
     size_t packed_results_per_worker = packed_results.count/ num_workers;
     size_t remaining_packed_results = packed_results.count % num_workers;
@@ -105,11 +102,11 @@ int main (int argc, char *argv[]) {
         pthread_create(&threads[i],NULL, distribution_thread, &thread_args[i]);
     }
 
-    printf("joining distribution threads for reduce\n");
     // ------ join threaeds ----
     for (int i=0; i<num_workers; i++) {
         pthread_join(threads[i],NULL);
     }
+    chunking_free(&packed_results);
     // ----- check for errors from threads -----
     for (int i=0; i<num_workers; i++) {
          if (thread_args[i].error != 0) {
@@ -118,7 +115,6 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    printf("free ing reduced results\n");
     // ------- free reduced results ------
     for (int i=0; i<num_reduced_results; i++) {
         free(reduced_results[i]);

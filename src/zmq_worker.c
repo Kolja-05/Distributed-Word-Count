@@ -59,6 +59,7 @@ int main (int argc, const char * argv[])
 
         switch (type) {
             case PROTOCOL_MAP: {
+
                 hashmap_t *hashmap = hashmap_create();
                 const char * payload = protocol_get_payload(buf);
                 wordcount_map(payload, hashmap);
@@ -70,15 +71,17 @@ int main (int argc, const char * argv[])
                 break;
             }
             case PROTOCOL_RED: {
-                // hashmap_t *hashmap = hashmap_create();
-                // const char *payload = protocol_get_payload(buf);
-                // char reply_buf[PROTOCOL_MAX_MSG_LEN];
-                // wordcount_ones_string_to_number(payload, reply_buf);
-                // wordcount_reduce(reply_buf, hashmap);
-                // hashmap_int_values_to_string(hashmap, reply_buf);
-                // zmq_send(socket, reply_buf, strlen(reply_buf) + 1,0);
-                // hashmap_free(hashmap);
-                zmq_send(socket, "", 1, 0);
+                hashmap_t *hashmap = hashmap_create();
+                const char *payload = protocol_get_payload(buf);
+                printf("###############\nto reduce: %s\n", payload);
+                char reply_buf[PROTOCOL_MAX_MSG_LEN];
+                wordcount_ones_string_to_number(payload, reply_buf);
+                printf("######half reduced: \n %s \n", reply_buf);
+                wordcount_reduce(reply_buf, hashmap);
+                hashmap_int_values_to_string(hashmap, reply_buf);
+                printf("##### REDUCED: %s\n", reply_buf);
+                zmq_send(socket, reply_buf, strlen(reply_buf) + 1,0);
+                hashmap_free(hashmap);
                 break;
             }
             case PROTOCOL_RIP:

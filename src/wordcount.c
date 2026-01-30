@@ -12,9 +12,9 @@ void wordcount_map(const char *text, hashmap_t *hashmap) {
     char word[MAX_WORD_LEN] = {0}; // initialize to avoid unknown behaviour
     int pos = 0;
     for (int i=0; text[i]!= '\0'; i++) {
-        if (isalpha(text[i])) {
+        if (isalpha((unsigned char) text[i])) {
             if (pos < MAX_WORD_LEN - 1) {
-                word[pos] = tolower(text[i]);
+                word[pos] = tolower((unsigned char) text[i]);
                 pos++;
             }
         }
@@ -42,7 +42,7 @@ void wordcount_ones_string_to_number(const char *input, char *output) {
                 sum++;
                 input_idx++;
             }
-            output_idx = snprintf(&output[output_idx], PROTOCOL_MAX_MSG_LEN, "%d", sum);
+            output_idx += snprintf(&output[output_idx], PROTOCOL_MAX_MSG_LEN - output_idx, "%d", sum);
         }
         else {
             output[output_idx++] = input[input_idx++];
