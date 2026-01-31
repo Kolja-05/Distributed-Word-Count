@@ -1,6 +1,7 @@
 #include "chunking.h"
 #include "string.h"
 #include "stdlib.h"
+#include <ctype.h>
 #include <stdio.h>
 
 
@@ -8,11 +9,11 @@
 
 chunk_list_t chunking_from_file(const char * filepath) {
     chunk_list_t result = {.chunks = NULL, .count = 0};
-    FILE * fp = fopen(filepath, "rb");
+    FILE * fp = fopen(filepath, "r");
     if (!fp) {
         return result;
     }
-
+    // estimate the chunk size to reduce realloc calls
     fseek(fp, 0, SEEK_END);
     long fsize_long = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -22,40 +23,121 @@ chunk_list_t chunking_from_file(const char * filepath) {
     }
     size_t fsize = (size_t) fsize_long;
     size_t max_chunk = (size_t) MAX_CHUNK_SIZE;
-    size_t num_chunks = fsize / max_chunk;
+    size_t estimated_chunks = fsize / max_chunk;
     size_t remaining_bytes = fsize % (size_t) max_chunk;
 
     if (remaining_bytes > 0) {
-        num_chunks ++;
+        estimated_chunks ++;
     }
 
 
-   result.chunks = malloc(sizeof(chunk_t) * num_chunks);
+    result.chunks = malloc(sizeof(chunk_t) * estimated_chunks);
     if (!result.chunks) {
         fclose(fp);
         return result;
     }
-    result.count = num_chunks;
-    for (size_t i=0; i<num_chunks; i++) {
-        size_t chunk_size = max_chunk;
-        if (i == num_chunks - 1) {
-            // last chunk is smaller
-            chunk_size = fsize - i * max_chunk;
+
+    char *buf = malloc(MAX_CHUNK_SIZE+1);
+    if (!buf) {
+        fprintf(stderr, "malloc failed\n");
+        fclose(fp);
+        free(result.chunks);
+        return result;
+    }
+    size_t buf_len = 0;
+    size_t last_seperator = 0;
+    int c; // current character, mus be int, to detect EOF
+    while((c=fgetc(fp)) != EOF) {
+        buf[buf_len] = (char)c;
+        buf_len ++;
+        if (!isalpha(c)) {
+            last_seperator = buf_len;
         }
-        result.chunks[i].data = malloc(chunk_size + 1); // +1 for '\0'
-        if (!result.chunks[i].data) {
-            result.count = i;
-            chunking_free(&result);
+        if (buf_len == MAX_CHUNK_SIZE) {
+            size_t chunk_len = last_seperator; // if there was no seperator word is to big TODO error, but should not happen since words are shorter than 1496 characters
+            // save chunk
+            // check if space is in dynamic array
+            if (result.count >= estimated_chunks) {
+                estimated_chunks = estimated_chunks *2; // Double
+                chunk_t * tmp = realloc(result.chunks, estimated_chunks * sizeof(chunk_t));
+                if (!tmp) {
+                    free(buf);
+                    for (size_t i=0; i<result.count; i++) {
+                        free(result.chunks[i].data);
+                    }
+                    free(result.chunks);
+                    fclose(fp);
+                    chunk_list_t result = {.chunks = NULL, .count = 0};
+                    return result;
+                }
+                result.chunks = tmp;
+            }
+            chunk_t *chunk = &result.chunks[result.count];
+            result.count ++;
+            chunk->data = malloc(chunk_len + 1);
+            if (!chunk->data) {
+                free(buf);
+                for (size_t i=0; i<result.count; i++) free(result.chunks[i].data);
+                free(result.chunks);
+                fclose(fp);
+                chunk_list_t result = {.chunks = NULL, .count = 0};
+                return result;
+            }
+            memcpy(chunk->data, buf, chunk_len);
+            chunk->data[chunk_len] = '\0';
+            chunk->length = chunk_len;
+
+            size_t remaining_len = buf_len - chunk_len;
+            memmove(buf, buf + chunk_len, remaining_len);
+            buf_len = remaining_len;
+
+            //find last seperator
+            last_seperator = 0;
+            for (int i=0; i<buf_len; i++) {
+                if (!isalpha((unsigned char) buf[i])) {
+                    last_seperator = i+1;
+                }
+            }
+        }
+    }
+    // last chunk
+    if(buf_len > 0) {
+        // check if space is in dynamic array
+        if (result.count >= estimated_chunks) {
+            estimated_chunks = estimated_chunks *2; // Double
+            chunk_t * tmp = realloc(result.chunks, estimated_chunks * sizeof(chunk_t));
+            if (!tmp) {
+                free(buf);
+                for (size_t i=0; i<result.count; i++) {
+                    free(result.chunks[i].data);
+                }
+                free(result.chunks);
+                fclose(fp);
+                chunk_list_t result = {.chunks = NULL, .count = 0};
+                return result;
+            }
+            result.chunks = tmp;
+        }
+        chunk_t *chunk = &result.chunks[result.count];
+        result.count ++;
+        chunk->data = malloc(buf_len + 1);
+        if (!chunk->data) {
+            free(buf);
+            for (size_t i=0; i<result.count; i++) free(result.chunks[i].data);
+            free(result.chunks);
             fclose(fp);
+            chunk_list_t result = {.chunks = NULL, .count = 0};
             return result;
         }
-        fread(result.chunks[i].data, 1, chunk_size, fp);
-        result.chunks[i].data[chunk_size] = '\0';
-        result.chunks[i].length = chunk_size;
+        memcpy(chunk->data, buf, buf_len);
+        chunk->data[buf_len] = '\0';
+        chunk->length = buf_len;
     }
+    free(buf);
     fclose(fp);
     return result;
 }
+
 
 
 

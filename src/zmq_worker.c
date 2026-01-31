@@ -18,6 +18,7 @@ int main (int argc, const char * argv[])
         printf("Usage: %s <worker port 1> <worker port 2> ... <worker port n>", argv[0]);
         return 1;
     }
+    printf("starting worker \n");
     //  Socket to talk to clients
     void *context = zmq_ctx_new ();
 
