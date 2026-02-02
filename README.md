@@ -54,7 +54,7 @@ The distributor requires the path to the input file and the list of worker ports
 
 ## About the Algorithm
 
-### 1. Split (Input Preparation)
+### 1. Chunking (Input Preparation)
 
 The distributor splits the input text into chunks of **1500 bytes**.  
 Each chunk is sent to a worker with a `MAP` request.
