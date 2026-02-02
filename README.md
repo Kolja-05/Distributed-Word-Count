@@ -1,6 +1,6 @@
 # Distributed Word Count
 
-This repository contains an implementation of a distributed **MapReduce** algorithm for counting words in a text file.  
+This repository contains an implementation of a distributed [**MapReduce**](https://en.wikipedia.org/wiki/MapReduce) algorithm for counting words in a text file.  
 Communication between the *distributor* and the *workers* is handled using the
 [ZeroMQ](https://zeromq.org/) messaging library.
 
